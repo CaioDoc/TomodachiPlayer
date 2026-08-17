@@ -37,6 +37,7 @@ export const Card: React.FC<ItemCardProps> = ({
 }) => {
   const [fetchingMetadata, setFetchingMetadata] = useState(false);
   const [favStatus, setFavStatus] = useState<number>(isFavorite);
+  const [imageError, setImageError] = useState(false);
 
   let metadata: MediaMetadata | null = null;
   if (metadataJson) {
@@ -48,11 +49,14 @@ export const Card: React.FC<ItemCardProps> = ({
   }
 
   const title = metadata?.title || filename.replace(/\.[^/.]+$/, "");
-  const coverUrl = metadata?.coverUrl;
-  const rating = metadata?.rating;
-
-  const targetHref = type === "video" ? `/player/${id}` : `/reader/${id}`;
   const isVideo = type === "video";
+
+  // For manga, cover is always the first page/image inside the folder or archive
+  const mangaCoverUrl = `/api/reader/cover?id=${id}`;
+  const coverUrl = isVideo ? metadata?.coverUrl : (imageError ? metadata?.coverUrl : mangaCoverUrl);
+
+  const targetHref = isVideo ? `/player/${id}` : `/reader/${id}`;
+  const rating = metadata?.rating;
 
   const handleToggleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -102,12 +106,13 @@ export const Card: React.FC<ItemCardProps> = ({
     >
       {/* Cover Art Box */}
       <div className="relative aspect-[3/4] w-full bg-gradient-to-br from-zinc-800 via-zinc-900 to-black flex flex-col items-center justify-center overflow-hidden">
-        {coverUrl ? (
-          // Render Cover Image from Metadata
+        {coverUrl && !imageError ? (
+          // Render Cover Image (First page for manga, metadata cover for video)
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={coverUrl}
             alt={title}
+            onError={() => setImageError(true)}
             className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ease-out"
           />
         ) : (
@@ -156,7 +161,7 @@ export const Card: React.FC<ItemCardProps> = ({
             type="button"
             onClick={handleScanMetadata}
             disabled={fetchingMetadata}
-            title="Buscar capa e metadados via extensões"
+            title="Buscar metadados via extensões"
             className="absolute bottom-14 right-2.5 p-2 rounded-full bg-black/80 backdrop-blur-md text-zinc-300 hover:text-indigo-400 border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity active:scale-90 cursor-pointer z-10"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${fetchingMetadata ? "animate-spin text-indigo-400" : ""}`} />
