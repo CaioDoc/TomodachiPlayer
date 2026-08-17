@@ -207,7 +207,7 @@ export default function Home() {
   const mangaCount = items.filter((i) => i.type === "manga").length;
 
   return (
-    <div className="flex flex-col min-h-screen py-4 gap-5">
+    <div className="flex flex-col min-h-screen py-4 gap-5" suppressHydrationWarning>
       {/* Header */}
       <header className="flex flex-col gap-2.5 border-b border-zinc-800/80 pb-4">
         <div className="flex items-center justify-between">
@@ -272,12 +272,16 @@ export default function Home() {
       )}
 
       {/* SEARCH BAR & FILTERS TOOLBAR */}
-      <section className="flex flex-col gap-3">
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
+      <section className="flex flex-col gap-3" suppressHydrationWarning>
+        <div className="flex items-center gap-2" suppressHydrationWarning>
+          <div className="relative flex-1" suppressHydrationWarning>
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
             <input
               type="text"
+              autoComplete="off"
+              data-1p-ignore="true"
+              data-protonpass-ignore="true"
+              suppressHydrationWarning
               placeholder={`Pesquisar ${activeTab === "video" ? "vídeos" : "mangás"}...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
