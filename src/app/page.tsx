@@ -197,6 +197,9 @@ export default function Home() {
   const isFiltered =
     searchQuery.trim().length > 0 || selectedTag !== null || listFilter !== "all" || sortBy !== "newest";
 
+  const videoCount = items.filter((i) => i.type === "video").length;
+  const mangaCount = items.filter((i) => i.type === "manga").length;
+
   return (
     <div className="flex flex-col min-h-screen py-4 gap-5">
       {/* Header */}
@@ -218,7 +221,7 @@ export default function Home() {
           </div>
           <Link
             href="/settings"
-            className="touch-target p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors"
+            className="touch-target p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 active:scale-95 transition-all cursor-pointer"
             aria-label="Configurações"
           >
             <Settings className="w-5 h-5" />
@@ -272,12 +275,12 @@ export default function Home() {
               placeholder={`Pesquisar ${activeTab === "video" ? "vídeos" : "mangás"}...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full min-h-[44px] pl-10 pr-9 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+              className="w-full min-h-[44px] pl-10 pr-9 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-zinc-400 hover:text-white"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-zinc-400 hover:text-white active:scale-90 transition-transform cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -297,34 +300,34 @@ export default function Home() {
         </div>
 
         {/* QUICK LIST FILTER CHIPS */}
-        <div className="flex gap-1.5 overflow-x-auto pb-1">
+        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
           <button
             onClick={() => setListFilter("all")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all active:scale-95 cursor-pointer ${
               listFilter === "all"
-                ? "bg-zinc-800 text-white border border-zinc-700 shadow-xs"
-                : "bg-zinc-900/60 text-zinc-400 hover:text-zinc-200 border border-zinc-800"
+                ? "bg-zinc-800 text-white border border-zinc-700 shadow-md ring-1 ring-zinc-600"
+                : "bg-zinc-900/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 border border-zinc-800"
             }`}
           >
             Todas
           </button>
           <button
             onClick={() => setListFilter("favorites")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all active:scale-95 cursor-pointer ${
               listFilter === "favorites"
-                ? "bg-red-950/80 text-red-300 border border-red-800/80 shadow-xs"
-                : "bg-zinc-900/60 text-zinc-400 hover:text-red-300 border border-zinc-800"
+                ? "bg-red-600 text-white border border-red-500 shadow-md shadow-red-600/30"
+                : "bg-zinc-900/80 text-zinc-400 hover:text-red-300 hover:bg-zinc-800/60 border border-zinc-800"
             }`}
           >
-            <Heart className="w-3.5 h-3.5 fill-red-500 text-red-500" />
+            <Heart className={`w-3.5 h-3.5 ${listFilter === "favorites" ? "fill-white text-white" : "fill-red-500 text-red-500"}`} />
             <span>Favoritos</span>
           </button>
           <button
             onClick={() => setListFilter("watching")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all active:scale-95 cursor-pointer ${
               listFilter === "watching"
-                ? "bg-indigo-950/80 text-indigo-300 border border-indigo-800/80 shadow-xs"
-                : "bg-zinc-900/60 text-zinc-400 hover:text-indigo-300 border border-zinc-800"
+                ? "bg-indigo-600 text-white border border-indigo-500 shadow-md shadow-indigo-600/30"
+                : "bg-zinc-900/80 text-zinc-400 hover:text-indigo-300 hover:bg-zinc-800/60 border border-zinc-800"
             }`}
           >
             <Clock className="w-3.5 h-3.5 text-indigo-400" />
@@ -332,10 +335,10 @@ export default function Home() {
           </button>
           <button
             onClick={() => setListFilter("plan_to_watch")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all active:scale-95 cursor-pointer ${
               listFilter === "plan_to_watch"
-                ? "bg-amber-950/80 text-amber-300 border border-amber-800/80 shadow-xs"
-                : "bg-zinc-900/60 text-zinc-400 hover:text-amber-300 border border-zinc-800"
+                ? "bg-amber-600 text-white border border-amber-500 shadow-md shadow-amber-600/30"
+                : "bg-zinc-900/80 text-zinc-400 hover:text-amber-300 hover:bg-zinc-800/60 border border-zinc-800"
             }`}
           >
             <Bookmark className="w-3.5 h-3.5 text-amber-400" />
@@ -343,10 +346,10 @@ export default function Home() {
           </button>
           <button
             onClick={() => setListFilter("completed")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all active:scale-95 cursor-pointer ${
               listFilter === "completed"
-                ? "bg-emerald-950/80 text-emerald-300 border border-emerald-800/80 shadow-xs"
-                : "bg-zinc-900/60 text-zinc-400 hover:text-emerald-300 border border-zinc-800"
+                ? "bg-emerald-600 text-white border border-emerald-500 shadow-md shadow-emerald-600/30"
+                : "bg-zinc-900/80 text-zinc-400 hover:text-emerald-300 hover:bg-zinc-800/60 border border-zinc-800"
             }`}
           >
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
@@ -356,7 +359,7 @@ export default function Home() {
 
         {/* EXPANDABLE FILTERS PANEL */}
         {showFilters && (
-          <div className="flex flex-col gap-3 p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex flex-col gap-3 p-4 rounded-2xl bg-zinc-900/95 border border-zinc-800 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
                 <ArrowUpDown className="w-3.5 h-3.5 text-indigo-400" />
@@ -365,7 +368,7 @@ export default function Home() {
               {isFiltered && (
                 <button
                   onClick={clearFilters}
-                  className="text-xs text-indigo-400 hover:underline cursor-pointer"
+                  className="text-xs text-indigo-400 hover:underline active:opacity-75 transition-opacity cursor-pointer"
                 >
                   Limpar todos os filtros
                 </button>
@@ -375,9 +378,9 @@ export default function Home() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <button
                 onClick={() => setSortBy("newest")}
-                className={`px-3 py-2 rounded-xl text-xs font-medium border text-center transition-colors cursor-pointer ${
+                className={`px-3 py-2 rounded-xl text-xs font-medium border text-center transition-all active:scale-95 cursor-pointer ${
                   sortBy === "newest"
-                    ? "bg-indigo-600 border-indigo-500 text-white font-semibold"
+                    ? "bg-indigo-600 border-indigo-500 text-white font-semibold shadow-md"
                     : "bg-zinc-800/60 border-zinc-700/60 text-zinc-300 hover:bg-zinc-800"
                 }`}
               >
@@ -385,9 +388,9 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setSortBy("az")}
-                className={`px-3 py-2 rounded-xl text-xs font-medium border text-center transition-colors cursor-pointer ${
+                className={`px-3 py-2 rounded-xl text-xs font-medium border text-center transition-all active:scale-95 cursor-pointer ${
                   sortBy === "az"
-                    ? "bg-indigo-600 border-indigo-500 text-white font-semibold"
+                    ? "bg-indigo-600 border-indigo-500 text-white font-semibold shadow-md"
                     : "bg-zinc-800/60 border-zinc-700/60 text-zinc-300 hover:bg-zinc-800"
                 }`}
               >
@@ -395,9 +398,9 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setSortBy("za")}
-                className={`px-3 py-2 rounded-xl text-xs font-medium border text-center transition-colors cursor-pointer ${
+                className={`px-3 py-2 rounded-xl text-xs font-medium border text-center transition-all active:scale-95 cursor-pointer ${
                   sortBy === "za"
-                    ? "bg-indigo-600 border-indigo-500 text-white font-semibold"
+                    ? "bg-indigo-600 border-indigo-500 text-white font-semibold shadow-md"
                     : "bg-zinc-800/60 border-zinc-700/60 text-zinc-300 hover:bg-zinc-800"
                 }`}
               >
@@ -405,9 +408,9 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setSortBy("progress")}
-                className={`px-3 py-2 rounded-xl text-xs font-medium border text-center transition-colors cursor-pointer ${
+                className={`px-3 py-2 rounded-xl text-xs font-medium border text-center transition-all active:scale-95 cursor-pointer ${
                   sortBy === "progress"
-                    ? "bg-indigo-600 border-indigo-500 text-white font-semibold"
+                    ? "bg-indigo-600 border-indigo-500 text-white font-semibold shadow-md"
                     : "bg-zinc-800/60 border-zinc-700/60 text-zinc-300 hover:bg-zinc-800"
                 }`}
               >
@@ -422,9 +425,9 @@ export default function Home() {
                 <div className="flex flex-wrap gap-1.5">
                   <button
                     onClick={() => setSelectedTag(null)}
-                    className={`px-2.5 py-1 rounded-full text-xs transition-colors cursor-pointer ${
+                    className={`px-3 py-1 rounded-full text-xs transition-all active:scale-95 cursor-pointer ${
                       selectedTag === null
-                        ? "bg-indigo-600 text-white font-semibold"
+                        ? "bg-indigo-600 text-white font-semibold shadow-xs"
                         : "bg-zinc-800 text-zinc-400 hover:text-zinc-200"
                     }`}
                   >
@@ -434,12 +437,12 @@ export default function Home() {
                     <button
                       key={tag.id}
                       onClick={() => setSelectedTag(selectedTag === tag.name ? null : tag.name)}
-                      className="cursor-pointer"
+                      className="active:scale-95 transition-transform cursor-pointer"
                     >
                       <Tag
                         name={tag.name}
                         color={selectedTag === tag.name ? tag.color || "#6366F1" : "#27272A"}
-                        className={selectedTag === tag.name ? "ring-2 ring-indigo-400" : "opacity-75 hover:opacity-100"}
+                        className={selectedTag === tag.name ? "ring-2 ring-indigo-400 scale-105" : "opacity-75 hover:opacity-100"}
                       />
                     </button>
                   ))}
@@ -450,35 +453,35 @@ export default function Home() {
         )}
       </section>
 
-      {/* Tabs */}
-      <div className="flex p-1 bg-zinc-900/90 rounded-2xl border border-zinc-800/80">
+      {/* Dynamic Tabs */}
+      <div className="flex p-1 bg-zinc-900/90 rounded-2xl border border-zinc-800/80 shadow-lg">
         <button
           onClick={() => setActiveTab("video")}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all touch-target select-none cursor-pointer ${
+          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-[0.97] touch-target select-none cursor-pointer ${
             activeTab === "video"
-              ? "bg-indigo-600 text-white shadow-md"
-              : "text-zinc-400 hover:text-zinc-200"
+              ? "bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-md shadow-indigo-600/30"
+              : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50"
           }`}
         >
           <Play className="w-4 h-4 fill-current" />
           <span>Vídeos</span>
-          <span className="text-[11px] opacity-75">
-            ({items.filter((i) => i.type === "video").length})
+          <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${activeTab === "video" ? "bg-white/20 text-white" : "bg-zinc-800 text-zinc-400"}`}>
+            {videoCount}
           </span>
         </button>
 
         <button
           onClick={() => setActiveTab("manga")}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all touch-target select-none cursor-pointer ${
+          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-[0.97] touch-target select-none cursor-pointer ${
             activeTab === "manga"
-              ? "bg-purple-600 text-white shadow-md"
-              : "text-zinc-400 hover:text-zinc-200"
+              ? "bg-gradient-to-r from-purple-600 to-purple-500 text-white shadow-md shadow-purple-600/30"
+              : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50"
           }`}
         >
           <BookOpen className="w-4 h-4" />
           <span>Mangás</span>
-          <span className="text-[11px] opacity-75">
-            ({items.filter((i) => i.type === "manga").length})
+          <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${activeTab === "manga" ? "bg-white/20 text-white" : "bg-zinc-800 text-zinc-400"}`}>
+            {mangaCount}
           </span>
         </button>
       </div>
@@ -499,7 +502,7 @@ export default function Home() {
               <h3 className="font-semibold text-sm text-zinc-200">
                 {isFiltered
                   ? `Nenhum ${activeTab === "video" ? "vídeo" : "mangá"} encontrado para este filtro`
-                  : `Nenhum ${activeTab === "video" ? "vídeo" : "mangá"} encontrado`}
+                  : `Nenhum ${activeTab === "video" ? "vídeo" : "mangá"} cadastrado`}
               </h3>
               <p className="text-xs text-zinc-400 max-w-xs mt-1">
                 {isFiltered
@@ -514,9 +517,9 @@ export default function Home() {
               </Button>
             ) : (
               <Link href="/settings">
-                <Button variant="secondary" size="sm" className="mt-1">
+                <Button variant="primary" size="sm" className="mt-1">
                   <FolderPlus className="w-4 h-4" />
-                  <span>Configurar Bibliotecas</span>
+                  <span>Cadastrar Pastas de {activeTab === "video" ? "Vídeo" : "Mangá"}</span>
                 </Button>
               </Link>
             )}

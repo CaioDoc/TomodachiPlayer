@@ -3,17 +3,16 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -H 0.0.0.0",
+    "dev": "next dev -H 0.0.0.0 --webpack",
     "build": "next build --webpack",
     "start": "next start",
-    "start:local": "next start -H 0.0.0.0",
+    "start:local": "next start -H 0.0.0.0 --webpack",
     "lint": "eslint"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@types/adm-zip": "^0.5.8",
-    "@types/fluent-ffmpeg": "^2.1.28",
     "@vidstack/react": "^0.6.15",
     "adm-zip": "^0.6.0",
     "better-sqlite3": "^13.0.3",
@@ -34,6 +33,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/better-sqlite3": "^9.6.0",
+    "@types/fluent-ffmpeg": "^2.1.27",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
