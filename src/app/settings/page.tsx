@@ -19,6 +19,7 @@ import {
   Database,
   Download,
   Upload,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -41,9 +42,19 @@ interface ExtensionItem {
   is_enabled: number;
 }
 
+interface ExtensionCatalogItem {
+  name: string;
+  pkg?: string;
+  version?: string;
+  lang?: string;
+  icon?: string;
+  url?: string;
+}
+
 export default function SettingsPage() {
   const [folders, setFolders] = useState<FolderItem[]>([]);
   const [extensions, setExtensions] = useState<ExtensionItem[]>([]);
+  const [catalog, setCatalog] = useState<ExtensionCatalogItem[]>([]);
   const [loadingFolders, setLoadingFolders] = useState(true);
   const [loadingExtensions, setLoadingExtensions] = useState(true);
 
@@ -82,6 +93,7 @@ export default function SettingsPage() {
       const data = await res.json();
       if (data.success) {
         setExtensions(data.extensions);
+        if (data.catalog) setCatalog(data.catalog);
       }
     } catch (err) {
       console.error("Erro ao carregar extensões:", err);
@@ -138,6 +150,22 @@ export default function SettingsPage() {
       }
     } catch (err) {
       console.error("Erro ao excluir extensão:", err);
+    }
+  };
+
+  const handleAddPresetRepo = async (name: string, url: string) => {
+    try {
+      const res = await fetch("/api/extensions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, url }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchExtensions();
+      }
+    } catch (err) {
+      console.error("Erro ao adicionar repositório predefinido:", err);
     }
   };
 
@@ -335,14 +363,60 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-zinc-200 font-semibold text-base">
               <Compass className="w-5 h-5 text-purple-400" />
-              <h2>Repositórios de Extensões (Mihon/Aniyomi)</h2>
+              <h2>Repositórios de Extensões (Estilo Mihon/Aniyomi)</h2>
             </div>
             {!showAddExtension && (
               <Button variant="secondary" size="sm" onClick={() => setShowAddExtension(true)}>
                 <Plus className="w-4 h-4" />
-                <span>Adicionar Extensão</span>
+                <span>Adicionar Repositório</span>
               </Button>
             )}
+          </div>
+
+          {/* Quick Preset Repos */}
+          <div className="flex flex-col gap-2 p-3.5 rounded-2xl bg-purple-950/20 border border-purple-800/30">
+            <span className="text-xs font-semibold text-purple-300 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+              <span>Repositórios Recomendados de 1-Clique</span>
+            </span>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() =>
+                  handleAddPresetRepo(
+                    "AniList Real API Source",
+                    "https://graphql.anilist.co"
+                  )
+                }
+                className="px-3 py-1.5 rounded-xl bg-purple-900/40 border border-purple-700/50 text-xs font-medium text-purple-200 hover:bg-purple-800/60 transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <Globe className="w-3.5 h-3.5 text-purple-400" />
+                <span>+ Repositório AniList (Animes & Mangás)</span>
+              </button>
+              <button
+                onClick={() =>
+                  handleAddPresetRepo(
+                    "TMDB Real API Source",
+                    "https://api.themoviedb.org/3/search/multi"
+                  )
+                }
+                className="px-3 py-1.5 rounded-xl bg-purple-900/40 border border-purple-700/50 text-xs font-medium text-purple-200 hover:bg-purple-800/60 transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <Globe className="w-3.5 h-3.5 text-purple-400" />
+                <span>+ Repositório TMDB (Filmes & Séries)</span>
+              </button>
+              <button
+                onClick={() =>
+                  handleAddPresetRepo(
+                    "Aniyomi Extensions Index",
+                    "https://raw.githubusercontent.com/aniyomiorg/aniyomi-extensions/repo/index.json"
+                  )
+                }
+                className="px-3 py-1.5 rounded-xl bg-purple-900/40 border border-purple-700/50 text-xs font-medium text-purple-200 hover:bg-purple-800/60 transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <Globe className="w-3.5 h-3.5 text-purple-400" />
+                <span>+ Repositório Oficial Aniyomi Index</span>
+              </button>
+            </div>
           </div>
 
           {showAddExtension && (
@@ -353,7 +427,7 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
                 <div className="flex items-center gap-2 text-purple-400">
                   <Globe className="w-5 h-5" />
-                  <h3 className="font-semibold text-base text-zinc-100">Instalar Nova Extensão</h3>
+                  <h3 className="font-semibold text-base text-zinc-100">Instalar Repositório de Extensões</h3>
                 </div>
                 <button
                   type="button"
@@ -371,16 +445,16 @@ export default function SettingsPage() {
               )}
 
               <Input
-                label="Nome da Extensão"
-                placeholder="Ex: TMDB Anime Source, MyAnimeList Repo"
+                label="Nome do Repositório / Extensão"
+                placeholder="Ex: Aniyomi Extensions Repo, MangaDex Source"
                 value={extName}
                 onChange={(e) => setExtName(e.target.value)}
                 required
               />
 
               <Input
-                label="URL do Repositório ou Fonte .ts"
-                placeholder="Ex: https://raw.githubusercontent.com/.../extension.ts"
+                label="URL do Repositório ou JSON Index"
+                placeholder="Ex: https://raw.githubusercontent.com/.../index.json"
                 value={extUrl}
                 onChange={(e) => setExtUrl(e.target.value)}
                 required
@@ -399,7 +473,7 @@ export default function SettingsPage() {
                   ) : (
                     <>
                       <Check className="w-4 h-4" />
-                      <span>Salvar Extensão</span>
+                      <span>Salvar Repositório</span>
                     </>
                   )}
                 </Button>
@@ -416,9 +490,9 @@ export default function SettingsPage() {
             <div className="flex flex-col items-center justify-center p-8 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 text-center gap-3">
               <Compass className="w-10 h-10 text-zinc-600" />
               <div>
-                <p className="font-semibold text-sm text-zinc-300">Nenhuma extensão instalada</p>
+                <p className="font-semibold text-sm text-zinc-300">Nenhuma extensão ou repositório instalado</p>
                 <p className="text-xs text-zinc-500 max-w-xs mt-1">
-                  Adicione fontes de extensões para sincronizar automaticamente capas e sinopses online.
+                  Adicione fontes de extensões ou clique nos repositórios de 1-clique para sincronizar capas e metadados.
                 </p>
               </div>
             </div>
@@ -465,6 +539,34 @@ export default function SettingsPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Extension Catalog Store from Repos */}
+          {catalog.length > 0 && (
+            <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-zinc-800">
+              <h3 className="font-bold text-sm text-zinc-200 flex items-center gap-2">
+                <Compass className="w-4 h-4 text-indigo-400" />
+                <span>Extensões Disponíveis nos Repositórios ({catalog.length})</span>
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {catalog.map((cat, idx) => (
+                  <div key={idx} className="p-3.5 rounded-xl bg-zinc-900/80 border border-zinc-800 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-lg bg-zinc-800 text-purple-400 font-bold text-xs">
+                        {cat.lang?.toUpperCase() || "ALL"}
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-zinc-100">{cat.name}</h4>
+                        <p className="text-[10px] text-zinc-400">v{cat.version} • {cat.pkg || "Extensão Aniyomi"}</p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold">
+                      Ativa
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </section>

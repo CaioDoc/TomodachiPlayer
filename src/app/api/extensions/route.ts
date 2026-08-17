@@ -3,14 +3,57 @@ import { db } from "@/lib/db";
 import { extensions } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 
+interface ExternalExtensionPlugin {
+  id?: string;
+  name: string;
+  pkg?: string;
+  url?: string;
+  version?: string;
+  lang?: string;
+  icon?: string;
+}
+
 export async function GET() {
   try {
-    const allExtensions = await db.select().from(extensions);
-    return NextResponse.json({ success: true, extensions: allExtensions });
+    const installedExtensions = await db.select().from(extensions);
+
+    // Fetch catalog extensions from enabled extension repository URLs
+    const catalog: ExternalExtensionPlugin[] = [];
+
+    for (const repo of installedExtensions) {
+      if (repo.is_enabled === 1 && repo.url.startsWith("http")) {
+        try {
+          const res = await fetch(repo.url, { next: { revalidate: 3600 } });
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data)) {
+              data.forEach((item: ExternalExtensionPlugin) => {
+                catalog.push({
+                  name: item.name || "Fonte Sem Nome",
+                  pkg: item.pkg || item.id,
+                  version: item.version || "1.0.0",
+                  lang: item.lang || "all",
+                  icon: item.icon,
+                  url: item.url || repo.url,
+                });
+              });
+            }
+          }
+        } catch {
+          // Continue if single repo fetch fails
+        }
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      extensions: installedExtensions,
+      catalog,
+    });
   } catch (error) {
     console.error("[EXTENSIONS GET ERROR]", error);
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : "Erro ao buscar extensões" },
+      { success: false, error: error instanceof Error ? error.message : "Erro ao carregar extensões" },
       { status: 500 }
     );
   }
@@ -28,7 +71,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const [newExt] = await db
+    const [inserted] = await db
       .insert(extensions)
       .values({
         name: name.trim(),
@@ -37,11 +80,11 @@ export async function POST(req: Request) {
       })
       .returning();
 
-    return NextResponse.json({ success: true, extension: newExt });
+    return NextResponse.json({ success: true, extension: inserted });
   } catch (error) {
     console.error("[EXTENSIONS POST ERROR]", error);
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : "Erro ao cadastrar extensão" },
+      { success: false, error: error instanceof Error ? error.message : "Erro ao adicionar extensão" },
       { status: 500 }
     );
   }
@@ -52,11 +95,8 @@ export async function PATCH(req: Request) {
     const body = await req.json();
     const { id, is_enabled } = body;
 
-    if (id === undefined || is_enabled === undefined) {
-      return NextResponse.json(
-        { success: false, error: "ID e estado (is_enabled) são obrigatórios." },
-        { status: 400 }
-      );
+    if (!id) {
+      return NextResponse.json({ success: false, error: "ID é obrigatório." }, { status: 400 });
     }
 
     await db
@@ -80,11 +120,11 @@ export async function DELETE(req: Request) {
     const idParam = searchParams.get("id");
 
     if (!idParam) {
-      return NextResponse.json({ success: false, error: "ID da extensão é obrigatório" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "ID é obrigatório" }, { status: 400 });
     }
 
-    const extId = parseInt(idParam, 10);
-    await db.delete(extensions).where(eq(extensions.id, extId));
+    const id = parseInt(idParam, 10);
+    await db.delete(extensions).where(eq(extensions.id, id));
 
     return NextResponse.json({ success: true });
   } catch (error) {

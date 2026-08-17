@@ -18,8 +18,11 @@ import {
   Heart,
   Bookmark,
   CheckCircle2,
+  Folder,
+  Grid,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
+import { FolderCard } from "@/components/ui/FolderCard";
 import { Button } from "@/components/ui/Button";
 import { Tag } from "@/components/ui/Tag";
 import { ServerStatus } from "@/components/ServerStatus";
@@ -35,7 +38,16 @@ interface MediaItem {
   status?: string;
   metadata_json?: string | null;
   folderName?: string;
+  folder_id: number;
   created_at?: number;
+  tags?: Array<{ id: number; name: string; color?: string }>;
+}
+
+interface FolderItem {
+  id: number;
+  name: string;
+  path: string;
+  type: "video" | "manga";
   tags?: Array<{ id: number; name: string; color?: string }>;
 }
 
@@ -47,9 +59,12 @@ interface TagItem {
 
 type SortOption = "newest" | "az" | "za" | "progress";
 type ListFilter = "all" | "favorites" | "watching" | "plan_to_watch" | "completed";
+type ViewMode = "folders" | "items";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<"video" | "manga">("video");
+  const [viewMode, setViewMode] = useState<ViewMode>("folders");
+  const [folders, setFolders] = useState<FolderItem[]>([]);
   const [items, setItems] = useState<MediaItem[]>([]);
   const [continueItems, setContinueItems] = useState<MediaItem[]>([]);
   const [availableTags, setAvailableTags] = useState<TagItem[]>([]);
@@ -69,6 +84,7 @@ export default function Home() {
       const res = await fetch("/api/folders");
       const data = await res.json();
       if (data.success) {
+        setFolders(data.folders || []);
         setHasFolders(data.folders.length > 0);
       } else {
         setHasFolders(false);
@@ -101,11 +117,9 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // 1. Initial immediate data load
     fetchFoldersCheck();
     fetchItemsAndTags();
 
-    // 2. Non-blocking background library scan
     const timer = setTimeout(() => {
       setIsScanning(true);
       fetch("/api/scan")
@@ -122,6 +136,23 @@ export default function Home() {
 
     return () => clearTimeout(timer);
   }, [fetchFoldersCheck, fetchItemsAndTags]);
+
+  // Filter and Sort Folders / Series
+  const filteredFolders = useMemo(() => {
+    return folders
+      .filter((f) => f.type === activeTab)
+      .filter((f) => {
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase().trim();
+          if (!f.name.toLowerCase().includes(q)) return false;
+        }
+        if (selectedTag) {
+          const tagNames = f.tags?.map((t) => t.name) || [];
+          if (!tagNames.includes(selectedTag)) return false;
+        }
+        return true;
+      });
+  }, [folders, activeTab, searchQuery, selectedTag]);
 
   // Filter and Sort Items dynamically
   const filteredAndSortedItems = useMemo(() => {
@@ -309,62 +340,70 @@ export default function Home() {
           </Button>
         </div>
 
-        {/* QUICK LIST FILTER CHIPS */}
-        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-          <button
-            onClick={() => setListFilter("all")}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all active:scale-95 cursor-pointer ${
-              listFilter === "all"
-                ? "bg-zinc-800 text-white border border-zinc-700 shadow-md ring-1 ring-zinc-600"
-                : "bg-zinc-900/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 border border-zinc-800"
-            }`}
-          >
-            Todas
-          </button>
-          <button
-            onClick={() => setListFilter("favorites")}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all active:scale-95 cursor-pointer ${
-              listFilter === "favorites"
-                ? "bg-red-600 text-white border border-red-500 shadow-md shadow-red-600/30"
-                : "bg-zinc-900/80 text-zinc-400 hover:text-red-300 hover:bg-zinc-800/60 border border-zinc-800"
-            }`}
-          >
-            <Heart className={`w-3.5 h-3.5 ${listFilter === "favorites" ? "fill-white text-white" : "fill-red-500 text-red-500"}`} />
-            <span>Favoritos</span>
-          </button>
-          <button
-            onClick={() => setListFilter("watching")}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all active:scale-95 cursor-pointer ${
-              listFilter === "watching"
-                ? "bg-indigo-600 text-white border border-indigo-500 shadow-md shadow-indigo-600/30"
-                : "bg-zinc-900/80 text-zinc-400 hover:text-indigo-300 hover:bg-zinc-800/60 border border-zinc-800"
-            }`}
-          >
-            <Clock className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Em Andamento</span>
-          </button>
-          <button
-            onClick={() => setListFilter("plan_to_watch")}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all active:scale-95 cursor-pointer ${
-              listFilter === "plan_to_watch"
-                ? "bg-amber-600 text-white border border-amber-500 shadow-md shadow-amber-600/30"
-                : "bg-zinc-900/80 text-zinc-400 hover:text-amber-300 hover:bg-zinc-800/60 border border-zinc-800"
-            }`}
-          >
-            <Bookmark className="w-3.5 h-3.5 text-amber-400" />
-            <span>Planejo Assistir</span>
-          </button>
-          <button
-            onClick={() => setListFilter("completed")}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all active:scale-95 cursor-pointer ${
-              listFilter === "completed"
-                ? "bg-emerald-600 text-white border border-emerald-500 shadow-md shadow-emerald-600/30"
-                : "bg-zinc-900/80 text-zinc-400 hover:text-emerald-300 hover:bg-zinc-800/60 border border-zinc-800"
-            }`}
-          >
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Concluídos</span>
-          </button>
+        {/* VIEW MODE TOGGLE & QUICK LIST CHIPS */}
+        <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <div className="flex gap-1.5">
+            <button
+              onClick={() => setListFilter("all")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all active:scale-95 cursor-pointer ${
+                listFilter === "all"
+                  ? "bg-zinc-800 text-white border border-zinc-700 shadow-md ring-1 ring-zinc-600"
+                  : "bg-zinc-900/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 border border-zinc-800"
+              }`}
+            >
+              Todas
+            </button>
+            <button
+              onClick={() => setListFilter("favorites")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all active:scale-95 cursor-pointer ${
+                listFilter === "favorites"
+                  ? "bg-red-600 text-white border border-red-500 shadow-md shadow-red-600/30"
+                  : "bg-zinc-900/80 text-zinc-400 hover:text-red-300 hover:bg-zinc-800/60 border border-zinc-800"
+              }`}
+            >
+              <Heart className={`w-3.5 h-3.5 ${listFilter === "favorites" ? "fill-white text-white" : "fill-red-500 text-red-500"}`} />
+              <span>Favoritos</span>
+            </button>
+            <button
+              onClick={() => setListFilter("watching")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all active:scale-95 cursor-pointer ${
+                listFilter === "watching"
+                  ? "bg-indigo-600 text-white border border-indigo-500 shadow-md shadow-indigo-600/30"
+                  : "bg-zinc-900/80 text-zinc-400 hover:text-indigo-300 hover:bg-zinc-800/60 border border-zinc-800"
+              }`}
+            >
+              <Clock className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Em Andamento</span>
+            </button>
+          </div>
+
+          {/* View Mode Switcher: Pastas/Séries vs Arquivos */}
+          <div className="flex p-0.5 rounded-xl bg-zinc-900 border border-zinc-800 shrink-0">
+            <button
+              onClick={() => setViewMode("folders")}
+              title="Visualizar agrupado por Pastas / Séries (Bleach, Naruto, etc.)"
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                viewMode === "folders"
+                  ? "bg-indigo-600 text-white shadow-xs"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              <Folder className="w-3.5 h-3.5" />
+              <span className="sr-only sm:not-sr-only">Pastas</span>
+            </button>
+            <button
+              onClick={() => setViewMode("items")}
+              title="Visualizar arquivos individuais"
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                viewMode === "items"
+                  ? "bg-indigo-600 text-white shadow-xs"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              <Grid className="w-3.5 h-3.5" />
+              <span className="sr-only sm:not-sr-only">Arquivos</span>
+            </button>
+          </div>
         </div>
 
         {/* EXPANDABLE FILTERS PANEL */}
@@ -496,63 +535,106 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Media Grid */}
+      {/* Media Grid (Grouped by Folders/Series vs Individual Files) */}
       <main className="flex-1">
         {loading ? (
           <div className="flex flex-col items-center justify-center p-12 text-zinc-500 gap-3">
             <RefreshCw className="w-6 h-6 animate-spin text-indigo-400" />
             <p className="text-xs">Carregando mídias...</p>
           </div>
-        ) : filteredAndSortedItems.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-10 rounded-2xl bg-zinc-900/40 border border-zinc-800/60 text-center gap-3 my-4">
-            <div className="p-4 rounded-full bg-zinc-800/60 text-zinc-500">
-              {activeTab === "video" ? <Film className="w-8 h-8" /> : <Library className="w-8 h-8" />}
-            </div>
-            <div>
-              <h3 className="font-semibold text-sm text-zinc-200">
-                {isFiltered
-                  ? `Nenhum ${activeTab === "video" ? "vídeo" : "mangá"} encontrado para este filtro`
-                  : `Nenhum ${activeTab === "video" ? "vídeo" : "mangá"} cadastrado`}
-              </h3>
-              <p className="text-xs text-zinc-400 max-w-xs mt-1">
-                {isFiltered
-                  ? "Tente limpar os filtros ou selecionar outra lista/categoria."
-                  : "Adicione pastas locais nas Configurações para carregar seus arquivos automaticamente."}
-              </p>
-            </div>
-            {isFiltered ? (
-              <Button variant="secondary" size="sm" onClick={clearFilters} className="mt-1">
-                <X className="w-4 h-4" />
-                <span>Limpar Filtros</span>
-              </Button>
-            ) : (
+        ) : viewMode === "folders" ? (
+          // VISÃO POR PASTAS / SÉRIES (Bleach, Naruto, Dragon Ball)
+          filteredFolders.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-10 rounded-2xl bg-zinc-900/40 border border-zinc-800/60 text-center gap-3 my-4">
+              <div className="p-4 rounded-full bg-zinc-800/60 text-zinc-500">
+                <Folder className="w-8 h-8 text-indigo-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-sm text-zinc-200">
+                  {isFiltered ? "Nenhuma pasta encontrada para este filtro" : `Nenhuma pasta de ${activeTab === "video" ? "vídeo" : "mangá"} cadastrada`}
+                </h3>
+                <p className="text-xs text-zinc-400 max-w-xs mt-1">
+                  Adicione pastas locais (ex: Bleach, Naruto, Dragon Ball) nas Configurações.
+                </p>
+              </div>
               <Link href="/settings">
                 <Button variant="primary" size="sm" className="mt-1">
                   <FolderPlus className="w-4 h-4" />
                   <span>Cadastrar Pastas de {activeTab === "video" ? "Vídeo" : "Mangá"}</span>
                 </Button>
               </Link>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
+              {filteredFolders.map((f) => {
+                const folderItemCount = items.filter((i) => i.folder_id === f.id).length;
+                return (
+                  <FolderCard
+                    key={f.id}
+                    id={f.id}
+                    name={f.name}
+                    path={f.path}
+                    type={f.type}
+                    itemCount={folderItemCount}
+                    tags={f.tags}
+                  />
+                );
+              })}
+            </div>
+          )
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
-            {filteredAndSortedItems.map((item) => (
-              <Card
-                key={item.id}
-                id={item.id}
-                filename={item.filename}
-                type={item.type}
-                progress={item.progress}
-                totalProgress={item.total_progress}
-                isFavorite={item.is_favorite}
-                status={item.status}
-                metadataJson={item.metadata_json}
-                folderName={item.folderName}
-                tags={item.tags}
-                onMetadataUpdated={fetchItemsAndTags}
-              />
-            ))}
-          </div>
+          // VISÃO POR ARQUIVOS INDIVIDUAIS
+          filteredAndSortedItems.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-10 rounded-2xl bg-zinc-900/40 border border-zinc-800/60 text-center gap-3 my-4">
+              <div className="p-4 rounded-full bg-zinc-800/60 text-zinc-500">
+                {activeTab === "video" ? <Film className="w-8 h-8" /> : <Library className="w-8 h-8" />}
+              </div>
+              <div>
+                <h3 className="font-semibold text-sm text-zinc-200">
+                  {isFiltered
+                    ? `Nenhum ${activeTab === "video" ? "vídeo" : "mangá"} encontrado para este filtro`
+                    : `Nenhum ${activeTab === "video" ? "vídeo" : "mangá"} cadastrado`}
+                </h3>
+                <p className="text-xs text-zinc-400 max-w-xs mt-1">
+                  {isFiltered
+                    ? "Tente limpar os filtros ou selecionar outra lista/categoria."
+                    : "Adicione pastas locais nas Configurações para carregar seus arquivos automaticamente."}
+                </p>
+              </div>
+              {isFiltered ? (
+                <Button variant="secondary" size="sm" onClick={clearFilters} className="mt-1">
+                  <X className="w-4 h-4" />
+                  <span>Limpar Filtros</span>
+                </Button>
+              ) : (
+                <Link href="/settings">
+                  <Button variant="primary" size="sm" className="mt-1">
+                    <FolderPlus className="w-4 h-4" />
+                    <span>Cadastrar Pastas de {activeTab === "video" ? "Vídeo" : "Mangá"}</span>
+                  </Button>
+                </Link>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
+              {filteredAndSortedItems.map((item) => (
+                <Card
+                  key={item.id}
+                  id={item.id}
+                  filename={item.filename}
+                  type={item.type}
+                  progress={item.progress}
+                  totalProgress={item.total_progress}
+                  isFavorite={item.is_favorite}
+                  status={item.status}
+                  metadataJson={item.metadata_json}
+                  folderName={item.folderName}
+                  tags={item.tags}
+                  onMetadataUpdated={fetchItemsAndTags}
+                />
+              ))}
+            </div>
+          )
         )}
       </main>
     </div>
