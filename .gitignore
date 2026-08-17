@@ -20,6 +20,14 @@
 # production
 /build
 
+# sqlite database
+*.db
+*.db-journal
+
+# PWA generated service worker files
+public/sw.js
+public/workbox-*.js
+
 # misc
 .DS_Store
 *.pem
