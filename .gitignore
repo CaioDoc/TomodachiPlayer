@@ -23,6 +23,8 @@
 # sqlite database
 *.db
 *.db-journal
+*.db-wal
+*.db-shm
 
 # PWA generated service worker files
 public/sw.js
