@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import {
   Play,
@@ -64,21 +64,22 @@ export default function Home() {
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [showFilters, setShowFilters] = useState(false);
 
-  const fetchFoldersCheck = async () => {
+  const fetchFoldersCheck = useCallback(async () => {
     try {
       const res = await fetch("/api/folders");
       const data = await res.json();
       if (data.success) {
         setHasFolders(data.folders.length > 0);
+      } else {
+        setHasFolders(false);
       }
     } catch {
       setHasFolders(false);
     }
-  };
+  }, []);
 
-  const fetchItemsAndTags = async () => {
+  const fetchItemsAndTags = useCallback(async () => {
     try {
-      setLoading(true);
       const [itemsRes, continueRes, tagsRes] = await Promise.all([
         fetch("/api/items"),
         fetch("/api/items/continue"),
@@ -89,33 +90,38 @@ export default function Home() {
       const continueData = await continueRes.json();
       const tagsData = await tagsRes.json();
 
-      if (itemsData.success) setItems(itemsData.items);
-      if (continueData.success) setContinueItems(continueData.items);
-      if (tagsData.success) setAvailableTags(tagsData.tags);
+      if (itemsData.success) setItems(itemsData.items || []);
+      if (continueData.success) setContinueItems(continueData.items || []);
+      if (tagsData.success) setAvailableTags(tagsData.tags || []);
     } catch (err) {
       console.error("[HOME] Erro ao buscar dados:", err);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
+    // 1. Initial immediate data load
     fetchFoldersCheck();
     fetchItemsAndTags();
 
-    setIsScanning(true);
-    fetch("/api/scan")
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("[Tomodachi Scanner] Scan concluído:", data);
-        if (data.totalInserted > 0 || data.totalDeleted > 0) {
-          fetchItemsAndTags();
-          fetchFoldersCheck();
-        }
-      })
-      .catch((err) => console.error("[Tomodachi Scanner] Erro no scan:", err))
-      .finally(() => setIsScanning(false));
-  }, []);
+    // 2. Non-blocking background library scan
+    const timer = setTimeout(() => {
+      setIsScanning(true);
+      fetch("/api/scan")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.totalInserted > 0 || data.totalDeleted > 0) {
+            fetchItemsAndTags();
+            fetchFoldersCheck();
+          }
+        })
+        .catch((err) => console.error("[Tomodachi Scanner] Erro no scan:", err))
+        .finally(() => setIsScanning(false));
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [fetchFoldersCheck, fetchItemsAndTags]);
 
   // Filter and Sort Items dynamically
   const filteredAndSortedItems = useMemo(() => {

@@ -15,8 +15,10 @@ if (process.env.NODE_ENV !== "production") {
   globalThis._sqlite = sqlite;
 }
 
-// Enable Foreign Keys
+// Enable Foreign Keys, WAL mode for high concurrency, and busy timeout to prevent locks
 sqlite.pragma("foreign_keys = ON;");
+sqlite.pragma("journal_mode = WAL;");
+sqlite.pragma("busy_timeout = 5000;");
 
 // Auto-initialize tables on startup
 sqlite.exec(`
